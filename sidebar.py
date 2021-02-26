@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[1]:
+# In[ ]:
 
 
 import pandas as pd
@@ -21,7 +21,7 @@ import dash_bootstrap_components as dbc
 import locale
 
 
-# In[2]:
+# In[ ]:
 
 
 #Initiating data
@@ -29,7 +29,7 @@ df = pd.read_csv('cleaned_df.csv')
 df.head()
 
 
-# In[3]:
+# In[ ]:
 
 
 df['Gross PM']=np.multiply(np.divide(df['Profit'],df['Sales']),100).round(2)
@@ -53,7 +53,24 @@ def group_by(df,col):
     return grouped
 
 
-# In[4]:
+# ### Creating dash app
+
+# In[ ]:
+
+
+# Creating dash app
+
+app = dash.Dash(__name__, external_stylesheets=[dbc.themes.YETI],
+                suppress_callback_exceptions=True,
+               meta_tags=[{'name': 'viewport',
+                            'content': 'width=device-width, initial-scale=1.0'}]
+               )
+server=app.server
+
+
+# ### Generating Graphs
+
+# In[ ]:
 
 
 title_font={'size':20,'color':'black'}
@@ -61,7 +78,7 @@ legend_font={'size':16,'color':'black'}
 global_font=dict(family="Balto")
 
 
-# In[5]:
+# In[ ]:
 
 
 # BoxPlot Discount vs gross profit margin
@@ -83,7 +100,7 @@ fig_1.add_hline(y=0, line_dash="dot",
               annotation_position="bottom right")
 fig_1.add_vrect(x0=0.35, x1=0.45, 
               annotation_text="Decline", annotation_position="top left",
-              fillcolor="red", opacity=0.20, line_width=0)
+              fillcolor='red', opacity=0.20, line_width=0)
 fig_1.add_vline(x=0.41, line_width=1, line_dash="dash", line_color="red")
     
 # Sunburst Plot
@@ -91,7 +108,7 @@ fig_2 = px.sunburst(data_frame=df,
                     path = ['Category','Sub-Category'],
                     values='Quantity',
                     color='Profit',
-                    color_continuous_scale='rainbow',
+                    color_continuous_scale='blues',
                     hover_data={'Quantity':True,'Profit':True},)
 fig_2.update_traces(textfont={'family':'arial'},
                     textinfo='label+percent entry',
@@ -126,24 +143,9 @@ us_map.update_layout(title={'text':'Gross Profit Margin - USA Map',
                      paper_bgcolor='rgba(0,0,0,0)',plot_bgcolor='rgba(0,0,0,0)')
 
 
-# ### Creating dash app
-
-# In[6]:
-
-
-# Creating dash app
-
-app = dash.Dash(__name__, external_stylesheets=[dbc.themes.YETI],
-                suppress_callback_exceptions=True,
-               meta_tags=[{'name': 'viewport',
-                            'content': 'width=device-width, initial-scale=1.0'}]
-               )
-server=app.server
-
-
 # ### Side Bar
 
-# In[7]:
+# In[ ]:
 
 
 # Side bar component
@@ -180,7 +182,7 @@ sidebar = html.Div(
 
 # ### Home Page Layout
 
-# In[8]:
+# In[ ]:
 
 
 # Tabs Style
@@ -202,7 +204,7 @@ tab_selected_style = {
 locale.setlocale(locale.LC_ALL, '')
 
 
-# In[9]:
+# In[ ]:
 
 
 h_container = dbc.Container(
@@ -293,7 +295,7 @@ h_container = dbc.Container(
 
 # ### Page-1 Layout
 
-# In[10]:
+# In[ ]:
 
 
 # Tab style
@@ -312,34 +314,63 @@ tab_selected_style = {
     'padding': '6px'
 }
 
+dropdown = dcc.Dropdown(id='product-dropdown',
+                        options=[{'label': x, 'value': x} for x in sorted(df['Sub-Category'].unique())],
+                        placeholder="Select a product",
+                        style={'margin':'1rem',}
+                       )
+
+options = dcc.Tabs(id="tabs",
+                   value="Profit",
+                   children=[dcc.Tab(label="Profit", value="Profit",
+                                     style=tab_style,selected_style=tab_selected_style),
+                             dcc.Tab(label="Quantity", value="Quantity",
+                                     style=tab_style,selected_style=tab_selected_style)],
+                             vertical=False,
+                  )
 p1_container = dbc.Container(
     [
         dbc.Row(
             [
                 dbc.Col([
+                    
+                    dbc.Row(
+                        [
+                            dbc.Col(dropdown, width=6),
+                            dbc.Col(options, width=6),
+                        ],
+                    ),
+                    
                     dcc.Graph(id='heat',figure={}),
                     
-                    dcc.Tabs(id="tabs",
-                             value="Profit",
-                             children=[dcc.Tab(label="Quantity", value="Quantity",
-                                               style=tab_style,selected_style=tab_selected_style),
-                                       dcc.Tab(label="Profit", value="Profit",
-                                               style=tab_style,selected_style=tab_selected_style)],
-                             vertical=False,
-                            )
-                ], width={'size':6},style={"border": "1px solid black",}),
+                ], width={'size':7},style={"border": "1px solid black",}),
                 
                 dbc.Col(
                     dcc.Graph(id='sunburst',figure=fig_2, responsive=True),
-                    width={'size':6},style={"border": "1px solid black",},
+                    width={'size':5},style={"border": "1px solid black",},
                 ),
             ],no_gutters=True,justify = 'around',
         ),
         
         dbc.Row(
             [
-                    dcc.Graph(id='box',figure=fig_1, responsive=True),
-
+                dbc.Col(dcc.Graph(id='box',figure=fig_1),),
+                dbc.Col(
+                    dbc.Card(
+                        [
+                            dbc.CardBody(
+                                [
+                                    html.P(
+                                        ['There is a progressive decline in the profit margin as discount increases.',
+                                         html.Hr(),
+                                        'Red region denotes the transition of all transactions to negative profit margin.',],
+                                        className="card-text",),
+                                ],),
+                        ],color='red',style={'background-color':'rgba(255, 0, 0, 0.2)', 'font-color':'black'},
+                    ),
+                    className='d-flex justify-content-center align-items-center',
+                    style={'margin':'1rem'},
+                ),
             ], no_gutters=True,justify = 'around',
         ),
     ],fluid=True,
@@ -348,7 +379,7 @@ p1_container = dbc.Container(
 
 # ### Conclusion Layout
 
-# In[11]:
+# In[ ]:
 
 
 # Creating card components
@@ -439,7 +470,7 @@ p2_container=dbc.Container(
 
 # ### Main content Layout
 
-# In[12]:
+# In[ ]:
 
 
 """ Main app body components"""
@@ -456,7 +487,7 @@ content = html.Div(id="page-content", children=[],
 
 # ### Whole app layout
 
-# In[13]:
+# In[ ]:
 
 
 app.layout = html.Div(
@@ -472,7 +503,7 @@ app.layout = html.Div(
 
 # __Sidebar Callback__
 
-# In[14]:
+# In[ ]:
 
 
 @app.callback(
@@ -504,7 +535,7 @@ def render_page_content(pathname):
 
 # __Home container callback__
 
-# In[15]:
+# In[ ]:
 
 
 @app.callback(
@@ -534,6 +565,7 @@ def update_output(option):
         
         fig.add_trace(go.Histogram(x=dff['Category'],name='Product Category'),
               row=2, col=2)
+        fig.update_layout(xaxis={'categoryorder':'category ascending'})
         
     else:
         fig = make_subplots(rows=2, cols=2, shared_yaxes=True)
@@ -554,7 +586,8 @@ def update_output(option):
         fig.add_trace(go.Bar(x=cat['Category'],y=cat[option],name='Product Category'),
               row=2, col=2)
         
-    fig.update_layout(legend=dict(orientation="h",
+    fig.update_layout(xaxis={'categoryorder':'category ascending'},
+                      legend=dict(orientation="h",
                                   yanchor="bottom", y=1.2, 
                                   xanchor="left",x=0),
                       font=global_font,
@@ -581,30 +614,45 @@ def update_output(option):
 
 # __Page-1 Callback__
 
-# In[16]:
+# In[ ]:
 
 
 @app.callback(
     Output(component_id='heat', component_property='figure'),
-    [Input(component_id='tabs', component_property='value')]
+    [Input(component_id='tabs', component_property='value'),
+     Input(component_id='product-dropdown', component_property='value'),]
 )
 
 
-def update_output(tab):
+def update_output(tab, product):
     dff=df.copy()
     dff['Gross PM']=np.multiply(np.divide(dff['Profit'],dff['Sales']),100).round(2)
     dff.round(2)
     
-    pro= pd.crosstab(index=dff['Discount'],columns=dff['Sub-Category'], values=dff[tab],aggfunc=np.sum )
-    fig_3= px.imshow(pro, color_continuous_scale='blues_r',
-                     title='{} across range of discounts given on products'.format(tab),
-                     labels={'color':tab}
-                    ).update_layout(title={'font':title_font, 
-                                           'x':0.5, 'y':0.9,
-                                           'xanchor':'center', 'yanchor':'middle'},
-                                    font=global_font,
-                                    legend={'font':legend_font}, font_color='black',
-                                    plot_bgcolor='rgba(0,0,0,0)',paper_bgcolor='rgba(0,0,0,0)')
+    legend={'font':legend_font,
+            'title':{'text':'Click categories to select/deselect', 'side':'top'},
+            'orientation':"h",
+            'yanchor':"bottom", 'y':1.2,  
+            'xanchor':"center",'x':0.5,
+            'bordercolor':'grey','borderwidth':1
+           }
+    
+    if product==None:
+        data = group_by(dff,['Discount','Category']).sort_values('Discount',ascending=True,ignore_index=True)
+        fig_3=px.bar(data, x='Discount', y=tab,
+                    color="Category", barmode="group")
+    else:
+        data = group_by(dff[dff['Sub-Category']==product],'Discount').sort_values('Discount',ascending=True,ignore_index=True)
+        fig_3=px.bar(data, x='Discount', y=tab)
+        
+        
+    fig_3.update_layout(xaxis=dict(tickmode='linear',tick0=0,dtick=0.1),
+                        font=global_font,
+                        legend=legend, 
+                        font_color='black',
+                        plot_bgcolor='rgba(0,0,0,0)',paper_bgcolor='rgba(0,0,0,0)')
+    
+    fig_3.update_xaxes(showgrid=True)
     
     return fig_3
     
@@ -612,7 +660,7 @@ def update_output(tab):
 
 # ### Launching web application dashboard
 
-# In[17]:
+# In[ ]:
 
 
 if __name__=='__main__':
