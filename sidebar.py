@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[ ]:
+# In[1]:
 
 
 import pandas as pd
@@ -21,41 +21,18 @@ import dash_bootstrap_components as dbc
 import locale
 
 
-# In[ ]:
+# In[2]:
 
 
 #Initiating data
 df = pd.read_csv('cleaned_df.csv')
-df.head()
-
-
-# In[ ]:
-
-
 df['Gross PM']=np.multiply(np.divide(df['Profit'],df['Sales']),100).round(2)
-def state_(dataframe):
-    states=dataframe.groupby(['State','state_code','Region'], as_index=False).agg({'Sales':'sum', 
-                                                                        'Profit':'sum', 
-                                                                        'Discount':'mean',
-                                                                        'Quantity':'sum'})
-    # Calculating Relative Profit
-    states['Gross PM']=np.multiply(np.divide(states['Profit'],states['Sales']),100).round(2)
-    states = states.sort_values('Sales',ascending=False,ignore_index=True)
-    return states
-
-def group_by(df,col):
-    grouped = df.groupby(by=col,as_index=False).agg({'Sales':'sum',
-                                                      'Profit':'sum',
-                                                      'Quantity':'sum',
-                                                      'Discount':'mean'
-                                                     })
-    grouped['Gross PM']=np.multiply(np.divide(grouped['Profit'],grouped['Sales']),100).round(2)
-    return grouped
+df.head()
 
 
 # ### Creating dash app
 
-# In[ ]:
+# In[3]:
 
 
 # Creating dash app
@@ -70,7 +47,30 @@ server=app.server
 
 # ### Generating Graphs
 
-# In[ ]:
+# In[4]:
+
+
+def group_by(df,col):
+    grouped = df.groupby(by=col,as_index=False).agg({'Sales':'sum',
+                                                      'Profit':'sum',
+                                                      'Quantity':'sum',
+                                                      'Discount':'mean'
+                                                     })
+    grouped['Gross PM']=np.multiply(np.divide(grouped['Profit'],grouped['Sales']),100).round(2)
+    return grouped
+
+def state_(dataframe):
+    states=dataframe.groupby(['State','state_code','Region'], as_index=False).agg({'Sales':'sum', 
+                                                                        'Profit':'sum', 
+                                                                        'Discount':'mean',
+                                                                        'Quantity':'sum'})
+    # Calculating Relative Profit
+    states['Gross PM']=np.multiply(np.divide(states['Profit'],states['Sales']),100).round(2)
+    states = states.sort_values('Sales',ascending=False,ignore_index=True)
+    return states
+
+
+# In[5]:
 
 
 title_font={'size':20,'color':'black'}
@@ -78,7 +78,30 @@ legend_font={'size':16,'color':'black'}
 global_font=dict(family="Balto")
 
 
-# In[ ]:
+# In[6]:
+
+
+states=state_(df)
+us_map=px.choropleth(data_frame=states,
+                    locationmode ='USA-states',
+                    locations='state_code',
+                    scope='usa',
+                    color='Gross PM',color_continuous_scale='blues_r',color_continuous_midpoint=0,
+                    hover_name='State',
+                    hover_data={'State':False,'Sales':True,'Discount':True,'state_code':False, 'Region':True},
+                    labels={'Gross PM':'Gross Profit Margin','Discount_mean':'Avg. Discount'},)
+
+us_map.update_layout(title={'text':'Gross Profit Margin - USA Map', 
+                            'font':title_font,
+                            'x':0.5, 'y':0.9,
+                            'xanchor':'center', 'yanchor':'middle'},
+                     font=global_font,
+                     font_color='black',
+                     geo=dict(bgcolor='rgba(0,0,0,0)'),
+                     paper_bgcolor='rgba(0,0,0,0)',plot_bgcolor='rgba(0,0,0,0)')
+
+
+# In[7]:
 
 
 # BoxPlot Discount vs gross profit margin
@@ -102,7 +125,11 @@ fig_1.add_vrect(x0=0.35, x1=0.45,
               annotation_text="Decline", annotation_position="top left",
               fillcolor='red', opacity=0.20, line_width=0)
 fig_1.add_vline(x=0.41, line_width=1, line_dash="dash", line_color="red")
-    
+
+
+# In[8]:
+
+
 # Sunburst Plot
 fig_2 = px.sunburst(data_frame=df, 
                     path = ['Category','Sub-Category'],
@@ -122,30 +149,10 @@ fig_2.update_layout(title={'text':'Quantity sold and profit gained for each prod
                     font=global_font,
                     plot_bgcolor='rgba(0,0,0,0)',paper_bgcolor='rgba(0,0,0,0)')
 
-# Choropleth Map
-states=state_(df)
-us_map=px.choropleth(data_frame=states,
-                    locationmode ='USA-states',
-                    locations='state_code',
-                    scope='usa',
-                    color='Gross PM',color_continuous_scale='blues_r',color_continuous_midpoint=0,
-                    hover_name='State',
-                    hover_data={'State':False,'Sales':True,'Discount':True,'state_code':False, 'Region':True},
-                    labels={'Gross PM':'Gross Profit Margin','Discount_mean':'Avg. Discount'},)
-
-us_map.update_layout(title={'text':'Gross Profit Margin - USA Map', 
-                            'font':title_font,
-                            'x':0.5, 'y':0.9,
-                            'xanchor':'center', 'yanchor':'middle'},
-                     font=global_font,
-                     font_color='black',
-                     geo=dict(bgcolor='rgba(0,0,0,0)'),
-                     paper_bgcolor='rgba(0,0,0,0)',plot_bgcolor='rgba(0,0,0,0)')
-
 
 # ### Side Bar
 
-# In[ ]:
+# In[9]:
 
 
 # Side bar component
@@ -182,7 +189,7 @@ sidebar = html.Div(
 
 # ### Home Page Layout
 
-# In[ ]:
+# In[10]:
 
 
 # Tabs Style
@@ -204,7 +211,7 @@ tab_selected_style = {
 locale.setlocale(locale.LC_ALL, '')
 
 
-# In[ ]:
+# In[11]:
 
 
 h_container = dbc.Container(
@@ -295,7 +302,7 @@ h_container = dbc.Container(
 
 # ### Page-1 Layout
 
-# In[ ]:
+# In[12]:
 
 
 # Tab style
@@ -379,7 +386,7 @@ p1_container = dbc.Container(
 
 # ### Conclusion Layout
 
-# In[ ]:
+# In[13]:
 
 
 # Creating card components
@@ -413,9 +420,9 @@ card_con = dbc.Card(
             [
                 dbc.ListGroup(
                     [
-                        dbc.ListGroupItem("1. Gross profit margin seem to be decreasing with increment in discount on products."),
+                        dbc.ListGroupItem("1. Gross profit margin seem to be less for higher discount on products."),
                         dbc.ListGroupItem("2. Beyond 40% discount, the store has experienced loss only"),
-                        dbc.ListGroupItem("3. The quantities sold are not increasing with increasing discount."),
+                        dbc.ListGroupItem("3. The quantities sold are not higher for increased discount."),
                     ],
                 ),
             ],className='bg-info',
@@ -470,7 +477,7 @@ p2_container=dbc.Container(
 
 # ### Main content Layout
 
-# In[ ]:
+# In[14]:
 
 
 """ Main app body components"""
@@ -487,7 +494,7 @@ content = html.Div(id="page-content", children=[],
 
 # ### Whole app layout
 
-# In[ ]:
+# In[15]:
 
 
 app.layout = html.Div(
@@ -503,7 +510,7 @@ app.layout = html.Div(
 
 # __Sidebar Callback__
 
-# In[ ]:
+# In[16]:
 
 
 @app.callback(
@@ -535,7 +542,7 @@ def render_page_content(pathname):
 
 # __Home container callback__
 
-# In[ ]:
+# In[17]:
 
 
 @app.callback(
@@ -596,7 +603,7 @@ def update_output(option):
     
     if option=='Transactions':
         option='Sales'
-        
+       
     fig_3=px.bar(data_frame=states, x = 'State', y = option, 
                  color='Gross PM', 
                  color_continuous_scale='blues_r',color_continuous_midpoint=0,
@@ -614,7 +621,7 @@ def update_output(option):
 
 # __Page-1 Callback__
 
-# In[ ]:
+# In[18]:
 
 
 @app.callback(
@@ -660,7 +667,7 @@ def update_output(tab, product):
 
 # ### Launching web application dashboard
 
-# In[ ]:
+# In[19]:
 
 
 if __name__=='__main__':
